@@ -6,7 +6,7 @@ services:
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false   # dev mode, sin TLS ni auth
+      - xpack.security.enabled=false   # dev mode, without TLS or auth
       - ES_JAVA_OPTS=-Xms1g -Xmx1g
     ports:
       - "9200:9200"

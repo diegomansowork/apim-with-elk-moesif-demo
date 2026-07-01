@@ -1,6 +1,8 @@
-# apim-with-elk-moesif-demo
+# API Platform with ELK + Moesif Demo
 
 This repository contains a Docker Compose-based project that starts WSO2 APIM + ELK to demonstrate that events are sent to Moesif + ELK simultaneously.
+
+> The customization that enables this functionality is already compiled and included in the project. For details, please check [here](https://github.com/diegomansowork/apim-wso2-multianalytics)
 
 ## Configuration
 
