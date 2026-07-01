@@ -1,0 +1,85 @@
+version: "3.8"
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false   # dev mode, sin TLS ni auth
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - "9200:9200"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.17.0
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.17.0
+    container_name: logstash
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9600"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+    ports:
+      - "5044:5044"
+    environment:
+      - xpack.monitoring.enabled=false
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.17.0
+    container_name: filebeat
+    user: root
+    command: filebeat -e --strict.perms=false
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - apim_logs:/apim-logs:ro
+    depends_on:
+      logstash:
+        condition: service_healthy
+
+  wso2apim:
+    image: registry.wso2.com/wso2-apim/am:4.6.0.34
+    container_name: apim
+    ports:
+      - "9443:9443"
+      - "8243:8243"
+      - "8280:8280"
+    volumes:
+      # Custom config
+      - ./apim/deployment.toml:/home/wso2carbon/wso2am-4.6.0/repository/conf/deployment.toml
+      - ./apim/log4j2.properties:/home/wso2carbon/wso2am-4.6.0/repository/conf/log4j2.properties
+      # Composite Exporter Jar
+      - ./apim/lib/composite-analytics-reporter-1.0.0.jar:/home/wso2carbon/wso2am-4.6.0/repository/components/lib/composite-analytics-reporter-1.0.0.jar
+      # Shared volume with Filebeat for metrics logs
+      - apim_logs:/home/wso2carbon/wso2am-4.6.0/repository/logs
+
+      # Database Persistence (H2)
+      - ./apim/Database:/home/wso2carbon/wso2am-4.6.0/repository/database
+      
+    environment:
+      - JAVA_OPTS=-Xms512m -Xmx1024m
+    depends_on:
+      - logstash
+
+volumes:
+  apim_logs:
