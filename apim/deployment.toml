@@ -295,6 +295,3 @@ iat_validity_period = "1h"
 # remote_tracer.name = "zipkin"
 # remote_tracer.properties.hostname = "host.docker.internal"
 # remote_tracer.properties.port = "9411"
-
-[apim.mcp]
-mcp_path_append_enabled = false
